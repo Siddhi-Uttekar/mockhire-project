@@ -1,43 +1,86 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# See https://help.github.com/articles/ignoring-files/
 
 # dependencies
-/node_modules
-/.pnp
+node_modules/
+.pnp
 .pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-package-lock.json
-# testing
-/coverage
+.pnpm-store
+jspm_packages/
+bower_components/
+web_modules/
 
-# next.js
-/.next/
-/out/
+# logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
-# production
-/build
+# runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# coverage
+coverage
+*.lcov
+.nyc_output
+
+# build outputs
+.next/
+out/
+build/
+dist/
+.output
+.nuxt
+.svelte-kit/
+.vite/
+.cache
+.parcel-cache
+.docusaurus
+.serverless/
+.fusebox/
+.firebase/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# env files
+.env
+.env.*
+!.env.example
 
 # misc
 .DS_Store
 *.pem
+.lock-wscript
+.tern-port
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
+# yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.yarn-integrity
 
-# env files (can opt-in for committing if needed)
-.env*
+# vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# vscode
+.vscode-test
+
+# prisma
+/lib/generated/prisma
 
 # vercel
 .vercel
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-/lib/generated/prisma
+# package lock
+package-lock.json
