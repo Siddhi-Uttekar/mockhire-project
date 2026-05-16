@@ -1,0 +1,266 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                           String                @id
+  uid                          String                @unique
+  email                        String                @unique
+  password                     String?
+  name                         String
+  displayName                  String?
+  firstName                    String?
+  lastName                     String?
+  provider                     String                @default("email")
+  tags                         String?
+  role                         UserRole              @default(CANDIDATE)
+  companyName                  String?
+  companyWebsite               String?
+  companySize                  String?
+  industry                     String?
+  jobTitle                     String?
+  phoneNumber                  String?
+  linkedinProfile              String?
+  isVerified                   Boolean               @default(false)
+  pronouns                     String?
+  bio                          String?
+  location                     String?
+  website                      String?
+  calendar                     String?
+  createdAt                    DateTime              @default(now())
+  updatedAt                    DateTime
+  emailVerificationToken       String?               @unique
+  emailVerificationTokenExpiry DateTime?
+  verificationStatus           VerificationStatus    @default(PENDING_EMAIL)
+  applications                 applications[]
+  candidate_feedbacks          candidate_feedbacks[]
+  feedbacks                    feedbacks[]
+  interviews                   interviews[]
+  jobs                         jobs[]
+  social_links                 social_links[]
+}
+
+model candidate_feedbacks {
+  id                             String   @id
+  userId                         String?
+  overallExperience              Int
+  nps                            Int
+  bestPart                       String?
+  worstPart                      String?
+  platformUsability              Int
+  clarityOfInstructions          Int
+  technicalIssues                Boolean
+  technicalIssuesDescription     String?
+  fairness                       Int
+  relevance                      Int
+  opportunityToDemonstrateSkills Boolean
+  inclusivity                    String?
+  feedbackHelpfulness            Int
+  feedbackConstructiveness       Int
+  feedbackTimeliness             Int
+  mostUsefulFeedback             String?
+  perceptionChange               String
+  perceptionChangeDescription    String?
+  createdAt                      DateTime @default(now())
+  updatedAt                      DateTime @updatedAt
+  User                           User?    @relation(fields: [userId], references: [id])
+}
+
+model category_scores {
+  id         String    @id
+  feedbackId String
+  name       String
+  score      Float
+  comment    String
+  feedbacks  feedbacks @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+}
+
+model detailed_feedbacks {
+  id                        String               @id
+  feedbackId                String               @unique
+  overallAnalysis           String
+  notableStrengths          String
+  areasForImprovement       String
+  overallRating             Float
+  technicalSkillsScore      Int
+  technicalSkillsCommentary String
+  problemSolvingScore       Int
+  problemSolvingCommentary  String
+  communicationScore        Int
+  communicationCommentary   String
+  confidenceScore           Int
+  confidenceCommentary      String
+  practiceFocusAreas        String
+  overallImpression         String
+  finalTip                  String
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime
+  feedbacks                 feedbacks            @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  question_feedbacks        question_feedbacks[]
+}
+
+model feedbacks {
+  id                  String              @id
+  interviewId         String
+  totalScore          Float
+  strengths           String
+  areasForImprovement String
+  finalAssessment     String
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime
+  userId              String
+  category_scores     category_scores[]
+  detailed_feedbacks  detailed_feedbacks?
+  interviews          interviews          @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  User                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model interviews {
+  id        String      @id
+  role      String
+  level     String
+  questions String
+  techstack String
+  type      String
+  finalized Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime
+  userId    String
+  feedbacks feedbacks[]
+  User      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model jobs {
+  id                  Int             @id @default(autoincrement())
+  title               String
+  location            String
+  description         String
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  authorId            String
+  aboutCompany        String?
+  benefits            String?
+  qualifications      String?
+  responsibilities    String?
+  applicationDeadline DateTime?
+  category            String?
+  experienceLevel     ExperienceLevel @default(MID_LEVEL)
+  jobType             JobType         @default(FULL_TIME)
+  remote              Boolean         @default(false)
+  salaryCurrency      String?         @default("USD")
+  salaryMax           Int?
+  salaryMin           Int?
+  skills              String?
+  status              JobStatus       @default(PUBLISHED)
+  viewCount           Int             @default(0)
+  applications        applications[]
+  User                User            @relation(fields: [authorId], references: [id])
+}
+
+model applications {
+  id                String            @id @default(uuid())
+  jobId             Int
+  candidateId       String
+  status            ApplicationStatus @default(PENDING)
+  fullName          String
+  email             String
+  phone             String?
+  resumeUrl         String?
+  coverLetter       String?
+  linkedinUrl       String?
+  githubUrl         String?
+  portfolioUrl      String?
+  yearsOfExperience Int?
+  currentCompany    String?
+  currentTitle      String?
+  expectedSalary    Int?
+  noticePeriod      String?
+  recruiterNotes    String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  candidate         User              @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  job               jobs              @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, candidateId])
+}
+
+model question_feedbacks {
+  id                     String             @id
+  detailedFeedbackId     String
+  questionId             Int
+  question               String
+  candidateAnswer        String
+  candidateAnswerSummary String?
+  actualAnswer           String?
+  expectedIdealPoints    String
+  recommendation         String
+  evaluationScore        Int
+  evaluationCoverage     String
+  evaluationMissedPoints String
+  evaluationDepth        String
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime
+  detailed_feedbacks     detailed_feedbacks @relation(fields: [detailedFeedbackId], references: [id], onDelete: Cascade)
+}
+
+model social_links {
+  id     String @id
+  userId String
+  type   String
+  url    String
+  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+}
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  ARCHIVED
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  FREELANCE
+}
+
+enum ExperienceLevel {
+  ENTRY_LEVEL
+  MID_LEVEL
+  SENIOR
+  LEAD
+  EXECUTIVE
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWING
+  SHORTLISTED
+  INTERVIEW_SCHEDULED
+  INTERVIEWED
+  OFFERED
+  HIRED
+  REJECTED
+  WITHDRAWN
+}
+
+enum UserRole {
+  CANDIDATE
+  RECRUITER
+}
+
+enum VerificationStatus {
+  PENDING_EMAIL
+  PENDING_MANUAL_REVIEW
+  VERIFIED
+  REJECTED
+}
