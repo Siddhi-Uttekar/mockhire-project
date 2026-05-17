@@ -38,6 +38,7 @@ import {
   Heart,
 } from "lucide-react";
 import { useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 
 const FormSchema = z.object({
   overallExperience: z.string(),
@@ -62,6 +63,7 @@ const FormSchema = z.object({
 
 export function FeedbackForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -74,16 +76,24 @@ export function FeedbackForm() {
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     setIsSubmitting(true);
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await fetch("/api/feedback", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        credentials: "same-origin",
+        headers,
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to submit feedback");
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || "Failed to submit feedback");
       }
 
       toast.success(
@@ -93,11 +103,30 @@ export function FeedbackForm() {
         }
       );
       form.reset();
+      setIsSubmitted(true);
     } catch (error) {
       toast.error("An error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (isSubmitted) {
+    return (
+      <Card className="border-border shadow-lg bg-card">
+        <CardContent className="py-12">
+          <div className="flex flex-col items-center text-center gap-4">
+            <CheckCircle2 className="h-12 w-12 text-green-600" />
+            <h2 className="text-2xl font-bold text-foreground">
+              Feedback Submitted
+            </h2>
+            <p className="max-w-2xl text-muted-foreground">
+              Thanks for sharing your experience. Your feedback has been saved.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (

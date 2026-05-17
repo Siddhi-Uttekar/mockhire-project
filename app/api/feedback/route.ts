@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -29,13 +31,21 @@ const feedbackSchema = z.object({
 export async function POST(req: Request) {
   try {
     const user = await getCurrentUser();
+    if (!user) {
+      return new NextResponse(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const json = await req.json();
     const data = feedbackSchema.parse(json);
 
-    await prisma.candidateFeedback.create({
+    await prisma.candidate_feedbacks.create({
       data: {
+        id: crypto.randomUUID(),
         ...data,
-        userId: user?.id,
+        userId: user.id,
       },
     });
 

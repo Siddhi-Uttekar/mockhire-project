@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -34,10 +36,32 @@ export async function POST(req: Request) {
     }
 
     const json = await req.json();
-    const data = candidateFeedbackSchema.parse(json);
+    const parsed = candidateFeedbackSchema.parse(json);
+    const data = {
+      overallExperience: parsed.overallExperience,
+      nps: parsed.nps,
+      bestPart: parsed.bestPart,
+      worstPart: parsed.worstPart,
+      platformUsability: parsed.platformUsability,
+      clarityOfInstructions: parsed.clarityOfInstructions,
+      technicalIssues: parsed.technicalIssues === "yes",
+      technicalIssuesDescription: parsed.technicalIssuesDescription,
+      fairness: parsed.fairness,
+      relevance: parsed.relevance,
+      opportunityToDemonstrateSkills:
+        parsed.opportunityToDemonstrateSkills === "yes",
+      inclusivity: parsed.inclusivity,
+      feedbackHelpfulness: parsed.feedbackHelpfulness,
+      feedbackConstructiveness: parsed.feedbackConstructiveness,
+      feedbackTimeliness: parsed.feedbackTimeliness,
+      mostUsefulFeedback: parsed.mostUsefulFeedback,
+      perceptionChange: parsed.perceptionChange ?? "",
+      perceptionChangeDescription: parsed.perceptionChangeDescription,
+    };
 
-    await prisma.candidateFeedback.create({
+    await prisma.candidate_feedbacks.create({
       data: {
+        id: crypto.randomUUID(),
         ...data,
         userId: user.id,
       },

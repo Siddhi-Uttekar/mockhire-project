@@ -26,8 +26,8 @@ import {
   Eye,
   Users,
   ArrowLeft,
-  CheckCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 
 const JobDetails = () => {
   const params = useParams();
@@ -37,9 +37,9 @@ const JobDetails = () => {
   const [job, setJob] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showApplyDialog, setShowApplyDialog] = useState(false);
+  const [applyFormKey, setApplyFormKey] = useState(0);
 
   useEffect(() => {
     if (!id) {
@@ -95,9 +95,11 @@ const JobDetails = () => {
       const data = await res.json();
 
       if (data?.success) {
-        setSuccessMessage("Application submitted successfully!");
+        toast.success("Application submitted successfully!");
+        setErrorMessage(null);
         setShowApplyDialog(false);
         formEl.reset();
+        setApplyFormKey((current) => current + 1);
       } else {
         setErrorMessage(data?.message || "Failed to submit application.");
       }
@@ -173,16 +175,6 @@ const JobDetails = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      {/* Success Banner */}
-      {successMessage && (
-        <div className="fixed top-0 left-0 right-0 bg-blue-900 text-white py-3 px-4 text-center z-50">
-          <div className="flex items-center justify-center gap-2">
-            <CheckCircle className="w-5 h-5" />
-            {successMessage}
-          </div>
-        </div>
-      )}
-
       <div className="container mx-auto px-4 py-8 md:py-16">
         <Link
           href="/jobs"
@@ -442,7 +434,12 @@ const JobDetails = () => {
                 {job.status !== "CLOSED" && (
                   <Dialog
                     open={showApplyDialog}
-                    onOpenChange={setShowApplyDialog}
+                    onOpenChange={(open) => {
+                      setShowApplyDialog(open);
+                      if (!open) {
+                        setErrorMessage(null);
+                      }
+                    }}
                   >
                     <DialogTrigger asChild>
                       <Button className="w-full bg-blue-900 hover:bg-slate-800 text-white py-6">
@@ -458,7 +455,11 @@ const JobDetails = () => {
                         )}
                       </DialogDescription>
 
-                      <form className="mt-4 space-y-4" onSubmit={handleApply}>
+                      <form
+                        key={applyFormKey}
+                        className="mt-4 space-y-4"
+                        onSubmit={handleApply}
+                      >
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="text-sm font-medium mb-1 block">

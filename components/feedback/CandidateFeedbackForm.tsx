@@ -11,6 +11,7 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
+import { toast } from "sonner";
 
 const feedbackSchema = z.object({
   overallExperience: z.number().min(1).max(5),
@@ -51,6 +52,7 @@ export function CandidateFeedbackForm({
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<FeedbackFormValues>({
     resolver: zodResolver(feedbackSchema),
@@ -94,6 +96,8 @@ export function CandidateFeedbackForm({
       if (!response.ok) {
         throw new Error("Failed to submit feedback");
       }
+      toast.success("Feedback submitted successfully!");
+      reset();
       onSubmitSuccess();
     } catch (err) {
       setError("An error occurred. Please try again.");
