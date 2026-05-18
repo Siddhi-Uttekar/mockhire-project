@@ -27,11 +27,12 @@ export interface SessionUser {
 
 export async function getCurrentUser(): Promise<SessionUser | null> {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     let token = cookieStore.get("accessToken")?.value;
 
     if (!token) {
-      const authHeader = headers().get("authorization");
+      const headerStore = await headers();
+      const authHeader = headerStore.get("authorization");
       if (authHeader?.startsWith("Bearer ")) {
         token = authHeader.substring(7);
       }

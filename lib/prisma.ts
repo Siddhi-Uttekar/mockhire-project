@@ -18,6 +18,8 @@ const prismaClientSingleton = () => {
   });
 };
 
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+
 let prisma: PrismaClient;
 
 if (typeof window === "undefined") {
@@ -25,10 +27,10 @@ if (typeof window === "undefined") {
     prisma = prismaClientSingleton();
   } else {
     // In development, use a global variable to preserve the connection across HMR
-    if (!global.prisma) {
-      global.prisma = prismaClientSingleton();
+    if (!globalForPrisma.prisma) {
+      globalForPrisma.prisma = prismaClientSingleton();
     }
-    prisma = global.prisma;
+    prisma = globalForPrisma.prisma;
   }
 }
 

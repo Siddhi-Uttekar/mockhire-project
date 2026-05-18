@@ -1,8 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromRequest } from "@/lib/session";
-import fs from "fs";
-import path from "path";
+
+const MAX_RESUME_SIZE_BYTES = 5 * 1024 * 1024;
+const DEFAULT_RESUME_MIME_TYPE = "application/pdf";
+
+function buildStoredResumePayload(fileName: string, mimeType: string, buffer: Buffer) {
+  return JSON.stringify({
+    fileName,
+    mimeType,
+    contentBase64: buffer.toString("base64"),
+  });
+}
+
+function getResumeDownloadUrl(applicationId: string) {
+  return `/api/applications/${applicationId}/resume`;
+}
+
+function isStoredResumePayload(value: string | null) {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as { contentBase64?: string };
+    return Boolean(parsed?.contentBase64);
+  } catch {
+    return false;
+  }
+}
+
+function mapApplicationResumeUrl<T extends { id: string; resumeUrl: string | null }>(
+  application: T,
+) {
+  if (!isStoredResumePayload(application.resumeUrl)) {
+    return application;
+  }
+
+  return {
+    ...application,
+    resumeUrl: getResumeDownloadUrl(application.id),
+  };
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -70,16 +109,24 @@ export async function POST(request: NextRequest) {
       // Handle resume upload
       const resume = form.get("resume") as File | null;
       if (resume && resume instanceof Blob) {
-        const uploadsDir = path.join(process.cwd(), "public", "uploads");
-        fs.mkdirSync(uploadsDir, { recursive: true });
-        const filename = `${Date.now()}_${(resume as any).name || "resume.pdf"}`;
-        const filePath = path.join(uploadsDir, filename);
-
         const arrayBuffer = await resume.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        fs.writeFileSync(filePath, buffer);
 
-        resumeUrl = `/uploads/${filename}`;
+        if (buffer.length > MAX_RESUME_SIZE_BYTES) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: "Resume file is too large. Please upload a file under 5 MB.",
+            },
+            { status: 400 },
+          );
+        }
+
+        const fileName = (resume as File).name || "resume.pdf";
+        const mimeType =
+          (resume as File).type?.trim() || DEFAULT_RESUME_MIME_TYPE;
+
+        resumeUrl = buildStoredResumePayload(fileName, mimeType, buffer);
       }
     } else {
       applicationData = await request.json();
@@ -158,7 +205,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, application });
+    return NextResponse.json({
+      success: true,
+      application: mapApplicationResumeUrl(application),
+    });
   } catch (error) {
     console.error("Application submission error:", error);
     return NextResponse.json(
@@ -241,7 +291,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      applications,
+      applications: applications.map(mapApplicationResumeUrl),
       pagination: {
         total,
         page,
@@ -319,7 +369,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      application: updatedApplication,
+      application: mapApplicationResumeUrl(updatedApplication),
     });
   } catch (error) {
     console.error("Application update error:", error);
