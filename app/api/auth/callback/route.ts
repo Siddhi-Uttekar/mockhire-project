@@ -60,12 +60,20 @@ export async function GET(request: NextRequest) {
     const protocol = request.headers.get("x-forwarded-proto") || "https";
     const requestUrl = host ? `${protocol}://${host}` : null;
 
-  const BASE_URL = (
-  process.env.NEXT_PUBLIC_BASE_URL ||
-  process.env.NEXTAUTH_URL ||
-  requestUrl ||
-  "http://localhost:3000"
-).replace(/\/$/, ""); // ✅ removes trailing slash
+    // Determine BASE_URL: use localhost for dev, production URL for prod
+    let BASE_URL = "http://localhost:3000";
+
+    if (process.env.NODE_ENV === "production") {
+      BASE_URL = (
+        process.env.NEXT_PUBLIC_BASE_URL ||
+        process.env.NEXTAUTH_URL ||
+        requestUrl ||
+        "https://mockhire-project.vercel.app"
+      ).replace(/\/$/, "");
+    } else {
+      // Development: use request host if available, otherwise localhost
+      BASE_URL = (requestUrl || "http://localhost:3000").replace(/\/$/, "");
+    }
 
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
       console.error("Missing Google OAuth credentials");
@@ -164,8 +172,12 @@ export async function GET(request: NextRequest) {
         name: userName,
       });
 
+      // Generate unique ID for the user
+      const uniqueId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
       user = await prisma.user.create({
         data: {
+          id: uniqueId,
           uid: userId,
           email: googleUser.email,
           name: userName,
@@ -175,6 +187,7 @@ export async function GET(request: NextRequest) {
           provider: "google",
           role: "CANDIDATE", // Default role, can be updated later
           isVerified: googleUser.email_verified || false,
+          updatedAt: new Date(),
         },
         include: { social_links: true },
       });
